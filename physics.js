@@ -1,9 +1,0 @@
-/* Independent spring displacement, shared by GPU and software 3D renderers. */
-'use strict';
-window.NexusPhysics=(()=>{const states=new Map(),bounds=new Map(),reduced=matchMedia('(prefers-reduced-motion: reduce)');let boundCanvas=null,lastImpulse=0;
-function state(id){if(!states.has(id))states.set(id,{x:0,y:0,r:0,vx:0,vy:0,vr:0});return states.get(id);}
-function update(dt){dt=Math.min(dt,.035);for(const s of states.values()){if(reduced.matches){s.x=s.y=s.r=s.vx=s.vy=s.vr=0;continue;}const k=24,d=5.4;s.vx+=(-k*s.x-d*s.vx)*dt;s.vy+=(-k*s.y-d*s.vy)*dt;s.vr+=(-18*s.r-4.5*s.vr)*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.r+=s.vr*dt;s.x=Math.max(-3,Math.min(3,s.x));s.y=Math.max(-3,Math.min(3,s.y));}}
-function hit(x,y){let best=null,dist=Infinity;for(const [id,b]of bounds){const d=Math.hypot(x-b.x,y-b.y);if(d<b.radius&&d<dist){best=id;dist=d;}}return best;}
-function push(id,x,y,strength=1){if(id===null||reduced.matches)return;const b=bounds.get(id),s=state(id),dx=b.x-x,dy=y-b.y,l=Math.hypot(dx,dy)||1;s.vx+=(dx/l*10+2)*strength;s.vy+=(dy/l*10+5)*strength;s.vr+=(dx>=0?1:-1)*7*strength;const hint=document.getElementById('universeHint');hint.textContent='A LITTLE PUSH. A GENTLE RETURN.';}
-function bind(canvas){if(boundCanvas===canvas)return;boundCanvas=canvas;canvas.addEventListener('pointerdown',e=>{const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;push(hit(x,y),x,y);},{passive:true});canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,id=hit(x,y);canvas.style.cursor=id===null?'default':'grab';if(e.pointerType==='mouse'&&id!==null&&performance.now()-lastImpulse>200){push(id,x,y,.22);lastImpulse=performance.now();}},{passive:true});}
-return{state,update,bind,register(id,x,y,radius){bounds.set(id,{x,y,radius});},clear(){bounds.clear();},scatter(){for(const[id,b]of bounds)push(id,b.x-20,b.y+20,.7);}};})();
